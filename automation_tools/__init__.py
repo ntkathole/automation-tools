@@ -2176,6 +2176,45 @@ def product_install(distribution, create_vm=False, certificate_url=None,
         execute(apply_hotfix, host=host)
 
 
+def setup_upstream_devel():
+    """Task which setup upstream devel environment.
+
+    The following environment variables affect this command:
+
+    RHN_USERNAME
+        Red Hat Network username.
+    RHN_PASSWORD
+        Red Hat Network password.
+    RHN_POOLID
+        Optional. Red Hat Network pool ID. Determines what software will be
+        available from RHN.
+    GITHUB_NICK
+        Your github nickname.
+    """
+    # subscribe
+    run(subscribe(True))
+    # Update the machine
+    run('yum update -y')
+    # enable repo
+    run('subscription-manager repos --enable=rhel-7-server-optional-rpms')
+    run('subscription-manager repos --enable=rhel-7-server-extras-rpms')
+    # install ansible
+    run("yum -y install git ansible")
+    run("git clone -q https://github.com/theforeman/forklift.git")
+    run("echo 'vagrant ALL=(ALL)NOPASSWD: ALL' >> /etc/sudoers")
+    run('echo -e "[devel]\n$(hostname)" > forklift/inventory')
+    run('cd forklift; ansible-playbook '
+        '-c local '
+        '-i inventory playbooks/devel.yml '
+        '-e katello_devel_github_username="${GITHUB_NICK}"')
+    run("yum install nodejs -y")
+    run("cd /home/vagrant/foreman; "
+        "npm install || node ./script/npm_install_plugins.js")
+    run("cd /home/vagrant/foreman; rake webpack:compile")
+    run("cd /home/vagrant/foreman; rake db:migrate")
+    run("cd /home/vagrant/foreman; bundle install")
+
+
 def fix_qdrouterd_listen_to_ipv6():
     """Configure qdrouterd to listen to IPv6 instead of IPv4.
 

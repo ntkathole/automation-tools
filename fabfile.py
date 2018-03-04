@@ -51,6 +51,7 @@ from automation_tools import (  # flake8: noqa
     setup_satellite_firewall,
     setup_libvirt_key,
     setup_proxy,
+    setup_upstream_devel,
     setup_vm_provisioning,
     subscribe,
     subscribe_dogfood,

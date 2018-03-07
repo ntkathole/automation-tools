@@ -82,7 +82,7 @@ def update_packages(*args, **kwargs):
         arguments = ''
 
     run(
-        'yum update -y {0}'.format(arguments),
+        'yum update --assumeno {0}'.format(arguments),
         quiet=kwargs.get('quiet', False),
         warn_only=kwargs.get('warn_only', False),
     )

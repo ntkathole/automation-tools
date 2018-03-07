@@ -232,24 +232,6 @@ def setup_proxy(run_katello_installer=True):
         return installer_options
 
 
-def setup_avahi_discovery():
-    """Task to setup avahi discovery used to discover VMs deployed to a VLAN
-       by 'ping vm.local' run at Satellite
-    """
-    os_version = distro_info()[1]
-    run('yum -y install https://dl.fedoraproject.org/pub/epel/'
-        'epel-release-latest-{0}.noarch.rpm'.format(os_version))
-    run('yum -y install nss-mdns')  # also pulls in avahi
-    run('rpm -e epel-release')
-    if os_version >= 7:
-        run('firewall-cmd --add-service mdns --permanent')
-        run('firewall-cmd --reload')
-    else:
-        run('iptables -I INPUT -d 224.0.0.251/32 -p udp -m udp --dport 5353'
-            ' -m conntrack --ctstate NEW -j ACCEPT')
-    run('service avahi-daemon restart')
-
-
 def setup_default_docker():
     """Task to configure system to support Docker as a valid
     Compute Resource for provisioning containers.
@@ -1335,7 +1317,6 @@ def setup_vm_provisioning(interface=None):
 
     # Install other required packages
     packages = (
-        'avahi',
         'bash',
         'bridge-utils',
         'cloud-utils',
@@ -1353,10 +1334,6 @@ def setup_vm_provisioning(interface=None):
         'util-linux',
     )
     run('yum install -y {0}'.format(' '.join(packages)))
-
-    # Setup avahi
-    manage_daemon('start', 'avahi-daemon')
-    manage_daemon('enable', 'avahi-daemon')
 
     # Setup snap-guest
     result = run('[ -d /opt/snap-guest ]', warn_only=True)
@@ -2145,8 +2122,6 @@ def product_install(distribution, create_vm=False, certificate_url=None,
 
     execute(setup_satellite_firewall, host=host)
 
-    execute(setup_avahi_discovery, host=host)
-
     # execute returns a dictionary mapping host strings to the given task's
     # return value
     installer_options.update(execute(
@@ -2253,7 +2228,7 @@ def product_install(distribution, create_vm=False, certificate_url=None,
         execute(setup_python_code_coverage, host=host)
 
         # Setup Ruby Code Coverage only for the provisioning jobs.
-        execute(setup_ruby_code_coverage, host=host)
+        # execute(setup_ruby_code_coverage, host=host)
 
     if (
         os.environ.get('EXTERNAL_AUTH') == 'IDM' or
@@ -2480,7 +2455,7 @@ def update_basic_packages():
     """Updates some basic packages before we can run some real tests."""
     update_packages('subscription-manager', 'yum-utils', quiet=True)
     run('yum install -y yum-plugin-security yum-security', quiet=True)
-    run('rpm -q subscription-manager python-rhsm')
+    run('rpm -q subscription-manager')
 
 
 def client_registration_test(clean_beaker=True, update_package=True,

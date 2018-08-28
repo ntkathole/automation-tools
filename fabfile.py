@@ -86,6 +86,7 @@ from automation_tools.satellite5 import (
 from automation_tools.utils import (
     compare_builds,
     distro_info,
+    generate_custom_certs,
     get_discovery_image,
     run_command,
     update_packages,

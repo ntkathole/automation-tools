@@ -6,7 +6,8 @@ import re
 import sys
 
 from bs4 import BeautifulSoup
-from fabric.api import env, run
+from fabric.api import env, put, run
+from io import StringIO
 
 from six.moves.urllib.request import urlopen
 
@@ -202,3 +203,36 @@ def compare_builds(url1, url2):
         print('Signature ' + signature + ' for ' + str(len(list1) - flag2) +
               ' packages not matched!!')
     print("================================================================")
+
+
+def generate_custom_certs():
+    """ Task to generate custom certs for satellite
+    :param: SERVER_HOSTNAME
+    :return: custom certs
+    """
+    certs_script = StringIO()
+    certs_script.write(
+        u"#! /bin/bash\n"
+        u"name={hostname}\n" 
+        u"mkdir ownca\n" 
+        u"pushd ownca\n" 
+        u"wget https://raw.githubusercontent.com/ntkathole"
+        u"/ownca/nik_fix/openssl.cnf\n"
+        u"wget https://raw.githubusercontent.com/ntkathole"
+        u"/ownca/nik_fix/generate-ca.sh\n"
+        u"wget https://raw.githubusercontent.com/ntkathole"
+        u"/ownca/nik_fix/generate-crt.sh\n"
+        u"echo 100001 >> serial\n"
+        u"chmod 744 *.sh\n"
+        u'yes "" | ./generate-ca.sh\n' 
+        u'yes | ./generate-crt.sh $name\n' 
+        u"certdir='$(pwd)/$name/'\n" 
+        u'cp cacert.crt $name/\n'
+        u'cd $name\n'
+        .format(hostname=os.environ.get('SERVER_HOSTNAME'))
+    )
+    put(local_path=certs_script,
+        remote_path='/root/certs_script.sh')
+    certs_script.close()
+    run("sh /root/certs_script.sh")
+

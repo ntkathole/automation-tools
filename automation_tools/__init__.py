@@ -1306,6 +1306,7 @@ def vm_create():
     else:
         env['vm_domain'] = '{hostname}'.format(**options)
 
+    print(options['bridge'])
     # fix_hostname only if using VLAN Bridge.
     if options['bridge'] != 'br0':
         # We need to fix the /etc/hosts file for snap-guest changes.
